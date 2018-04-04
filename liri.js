@@ -1,153 +1,129 @@
-//Grab data from keys.js
-var keys = require('./keys.js');
-var request = require('request');
-var twitter = require('twitter');
-var spotify = require('node-spotify-api');
-var client = new twitter(keys.twitterKeys);
-var fs = require('fs');
-
-//Stored argument's array
-var nodeArgv = process.argv;
-var command = process.argv[2];
-//movie or song
-var x = "";
-//attaches multiple word arguments
-for (var i=3; i<nodeArgv.length; i++){
-  if(i>3 && i<nodeArgv.length){
-    x = x + "+" + nodeArgv[i];
-  } else{
-    x = x + nodeArgv[i];
+// Read and set environment variables
+require("dotenv").config();
+// Import the Twitter NPM package.
+var Twitter = require("twitter");
+// Import the node-spotify-api NPM package.
+var Spotify = require("node-spotify-api");
+// Import the API keys
+var keys = require("./keys");
+// Import the request npm package.
+var request = require("request");
+// Import the FS package for read/write.
+var fs = require("fs");
+// Initialize the spotify API client using our client id and secret
+var spotify = new Spotify(keys.spotify);
+// FUNCTIONS
+// =====================================
+// Writes to the log.txt file
+var getArtistNames = function(artist) {
+  return artist.name;
+};
+// Function for running a Spotify search
+var getMeSpotify = function(songName) {
+  if (songName === undefined) {
+    songName = "What's my age again";
   }
-}
-
-//switch case
-switch(command){
-  case "my-tweets":
-    showTweets();
-  break;
-
-  case "spotify-this-song":
-    if(x){
-      spotifySong(x);
-    } else{
-      spotifySong("Fluorescent Adolescent");
-    }
-  break;
-
-  case "movie-this":
-    if(x){
-      omdbData(x)
-    } else{
-      omdbData("Mr. Nobody")
-    }
-  break;
-
-  case "do-what-it-says":
-    doThing();
-  break;
-
-  default:
-    console.log("{Please enter a command: my-tweets, spotify-this-song, movie-this, do-what-it-says}");
-  break;
-}
-
-function showTweets(){
-  //Display last 20 Tweets
-  var screenName = {screen_name: 'icesmooth2010'};
-  client.get('statuses/user_timeline', screenName, function(error, tweets, response){
-    if(!error){
-      for(var i = 0; i<tweets.length; i++){
-        var date = tweets[i].created_at;
-        console.log("@icesmooth2010: " + tweets[i].text + " Created At: " + date.substring(0, 19));
-        console.log("-----------------------");
-        
-        //adds text to log.txt file
-        fs.appendFile('log.txt', "@icesmooth2010: " + tweets[i].text + " Created At: " + date.substring(0, 19));
-        fs.appendFile('log.txt', "-----------------------");
+  spotify.search(
+    {
+      type: "track",
+      query: songName
+    },
+    function(err, data) {
+      if (err) {
+        console.log("Error occurred: " + err);
+        return;
       }
-    }else{
-      console.log('Error occurred');
-    }
-  });
-}
-
-function spotifySong(song){
-  spotify.search({ type: 'track', query: song}, function(error, data){
-    if(!error){
-      for(var i = 0; i < data.tracks.items.length; i++){
-        var songData = data.tracks.items[i];
-        //artist
-        console.log("Artist: " + songData.artists[0].name);
-        //song name
-        console.log("Song: " + songData.name);
-        //spotify preview link
-        console.log("Preview URL: " + songData.preview_url);
-        //album name
-        console.log("Album: " + songData.album.name);
-        console.log("-----------------------");
-        
-        //adds text to log.txt
-        fs.appendFile('log.txt', songData.artists[0].name);
-        fs.appendFile('log.txt', songData.name);
-        fs.appendFile('log.txt', songData.preview_url);
-        fs.appendFile('log.txt', songData.album.name);
-        fs.appendFile('log.txt', "-----------------------");
+      var songs = data.tracks.items;
+      for (var i = 0; i < songs.length; i++) {
+        console.log(i);
+        console.log("artist(s): " + songs[i].artists.map(getArtistNames));
+        console.log("song name: " + songs[i].name);
+        console.log("preview song: " + songs[i].preview_url);
+        console.log("album: " + songs[i].album.name);
+        console.log("-----------------------------------");
       }
-    } else{
-      console.log('Error occurred.');
+    }
+  );
+};
+// Function for running a Twitter Search
+var getMyTweets = function() {
+  var client = new Twitter(keys.twitter);
+  var params = {
+    screen_name: "icesmooth2010"
+  };
+  client.get("statuses/user_timeline", params, function(
+    error,
+    tweets,
+    response
+  ) {
+    if (!error) {
+      for (var i = 0; i < tweets.length; i++) {
+        console.log(tweets[i].created_at);
+        console.log("");
+        console.log(tweets[i].text);
+      }
     }
   });
-}
-
-function omdbData(movie){
-  var omdbURL = 'http://www.omdbapi.com/?t=' + movieTitle + '&plot=short&tomatoes=true';
-
-  request("http://www.omdbapi.com/?t=" + movieTitle + "&y=&plot=short&apikey=trilogy", function(error, response, body) {
-    if(!error && response.statusCode == 200){
-      var body = JSON.parse(body);
-
-      console.log("Title: " + JSON.parse(body).Title);
-      console.log("Release Year: " + body.Year);
-      console.log("IMdB Rating: " + body.imdbRating);
-      console.log("Country: " + body.Country);
-      console.log("Language: " + body.Language);
-      console.log("Plot: " + body.Plot);
-      console.log("Actors: " + body.Actors);
-      console.log("Rotten Tomatoes Rating: " + body.tomatoRating);
-      console.log("Rotten Tomatoes URL: " + body.tomatoURL);
-
-      //adds text to log.txt
-      fs.appendFile('log.txt', "Title: " + body.Title);
-      fs.appendFile('log.txt', "Release Year: " + body.Year);
-      fs.appendFile('log.txt', "IMdB Rating: " + body.imdbRating);
-      fs.appendFile('log.txt', "Country: " + body.Country);
-      fs.appendFile('log.txt', "Language: " + body.Language);
-      fs.appendFile('log.txt', "Plot: " + body.Plot);
-      fs.appendFile('log.txt', "Actors: " + body.Actors);
-      fs.appendFile('log.txt', "Rotten Tomatoes Rating: " + body.tomatoRating);
-      fs.appendFile('log.txt', "Rotten Tomatoes URL: " + body.tomatoURL);
-
-    } else{
-      console.log('Error occurred.')
-    }
-    if(movie === "Mr. Nobody"){
-      console.log("-----------------------");
-      console.log("If you haven't watched 'Mr. Nobody,' then you should: http://www.imdb.com/title/tt0485947/");
-      console.log("It's on Netflix!");
-
-      //adds text to log.txt
-      fs.appendFile('log.txt', "-----------------------");
-      fs.appendFile('log.txt', "If you haven't watched 'Mr. Nobody,' then you should: http://www.imdb.com/title/tt0485947/");
-      fs.appendFile('log.txt', "It's on Netflix!");
+};
+// Function for running a Movie Search
+var getMeMovie = function(movieName) {
+  if (movieName === undefined) {
+    movieName = "Mr Nobody";
+  }
+  var urlHit =
+    "http://www.omdbapi.com/?t=" +
+    movieName +
+    "&y=&plot=full&tomatoes=true&apikey=trilogy";
+  request(urlHit, function(error, response, body) {
+    if (!error && response.statusCode === 200) {
+      var jsonData = JSON.parse(body);
+      console.log("Title: " + jsonData.Title);
+      console.log("Year: " + jsonData.Year);
+      console.log("Rated: " + jsonData.Rated);
+      console.log("IMDB Rating: " + jsonData.imdbRating);
+      console.log("Country: " + jsonData.Country);
+      console.log("Language: " + jsonData.Language);
+      console.log("Plot: " + jsonData.Plot);
+      console.log("Actors: " + jsonData.Actors);
+      console.log("Rotton Tomatoes Rating: " + jsonData.Ratings[1].Value);
     }
   });
-
-}
-
-function doThing(){
-  fs.readFile('random.txt', "utf8", function(error, data){
-    var txt = data.split(',');
-
-    spotifySong(txt[1]);
+};
+// Function for running a command based on text file
+var doWhatItSays = function() {
+  fs.readFile("random.txt", "utf8", function(error, data) {
+    console.log(data);
+    var dataArr = data.split(",");
+    if (dataArr.length === 2) {
+      pick(dataArr[0], dataArr[1]);
+    } else if (dataArr.length === 1) {
+      pick(dataArr[0]);
+    }
   });
-}
+};
+// Function for determining which command is executed
+var pick = function(caseData, functionData) {
+  switch (caseData) {
+    case "my-tweets":
+      getMyTweets();
+      break;
+    case "spotify-this-song":
+      getMeSpotify(functionData);
+      break;
+    case "movie-this":
+      getMeMovie(functionData);
+      break;
+    case "do-what-it-says":
+      doWhatItSays();
+      break;
+    default:
+      console.log("LIRI doesn't know that");
+  }
+};
+// Function which takes in command line arguments and executes correct function accordigly
+var runThis = function(argOne, argTwo) {
+  pick(argOne, argTwo);
+};
+// MAIN PROCESS
+// =====================================
+runThis(process.argv[2], process.argv[3]);
