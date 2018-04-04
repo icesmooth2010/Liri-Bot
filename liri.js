@@ -10,7 +10,7 @@ var keys = require("./keys");
 var request = require("request");
 // Import the FS package for read/write.
 var fs = require("fs");
-// Initialize the spotify API client using our client id and secret
+// Initialize the spotify API client using client id and secret
 var spotify = new Spotify(keys.spotify);
 // FUNCTIONS
 // =====================================
@@ -21,7 +21,7 @@ var getArtistNames = function(artist) {
 // Function for running a Spotify search
 var getMeSpotify = function(songName) {
   if (songName === undefined) {
-    songName = "What's my age again";
+    songName = "Shiba Inus are so cute";
   }
   spotify.search(
     {
@@ -117,7 +117,7 @@ var pick = function(caseData, functionData) {
       doWhatItSays();
       break;
     default:
-      console.log("LIRI doesn't know that");
+      console.log("LIRI doesn't necessarily like this");
   }
 };
 // Function which takes in command line arguments and executes correct function accordigly
