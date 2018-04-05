@@ -26,7 +26,9 @@ var getMeSpotify = function(songName) {
   spotify.search(
     {
       type: "track",
-      query: songName
+      query: songName,
+      limit: 5
+
     },
     function(err, data) {
       if (err) {
